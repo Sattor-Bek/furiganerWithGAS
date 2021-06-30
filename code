@@ -1,0 +1,73 @@
+function autoFill() {
+  const sheet = SpreadsheetApp.getActiveSheet();
+  const currentRow = sheet.getActiveCell().getRow();
+  const currentColumn = sheet.getActiveCell().getColumn();
+  const value = sheet.getActiveCell().getValue();
+  if(currentRow>1 && currentColumn == 1){
+    const dataFromAPI = checkWithAPI(value)
+    const kanjiKana = kanaKanjiSorter(dataFromAPI)
+    let lastColumn = 0
+    kanjiKana.map( (item,i) =>{
+      sheet.getRange(currentRow,i+2).setValue(item);
+      lastColumn = + i
+    })
+    sheet.getRange(currentRow, lastColumn+3).setValue("Full=>");
+    sheet.getRange(currentRow, lastColumn+4).setValue(kanjiKana.join(""));
+  }  
+}
+
+function checkWithAPI(input) {
+  const morphographics = "https://labs.goo.ne.jp/api/morph";
+  const id = APP_ID
+  //Get APP_ID from "https://labs.goo.jp";
+  
+  const morphPayload = {
+    "app_id": id,
+    "sentence": input,
+    "info_filter": "form|read"
+  };
+
+  const morphOps = {
+    "method": "post",
+    "payload": morphPayload
+  };
+
+  const morph = UrlFetchApp.fetch(morphographics, morphOps);
+  const morphJson = JSON.parse(morph.getContentText());  
+  return morphJson.word_list;
+}
+
+
+
+function kanaKanjiSorter(value){  
+  const sortedData = value[0].map(function(x){
+      const val = {"item":x[0], "reading":toHiragana(x[1]), "katakana":x[1]}
+      if(val.item === val.reading || val.item === val.katakana){
+        return val.item
+      } else {
+        const original = val.item.split('');
+        if(original.some(x=>x.match(/^[ぁ-んー　]*$/))){
+          const concat = "[" + val.item + ":" + val.reading + "]"
+          return concat;
+        } else {
+          const okurigana = val.reading.split('').filter((v) => {
+          if(v.match(/[\u30FB-\u30FC]/g)){
+            return true;
+          } else {
+            return original.indexOf(v) == -1
+          }
+        } ).join('');
+        const concat = "[" + val.item + ":" + okurigana + "]";
+        return concat;
+        }        
+      }
+  })
+  return sortedData;
+}
+
+function toHiragana(str) {
+    return str.replace(/[\u30A1-\u30FA]/g, function(match) {
+        var chr = match.charCodeAt(0) - 0x60;
+        return String.fromCharCode(chr);
+    });
+}
