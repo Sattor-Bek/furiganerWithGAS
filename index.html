@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <!-- vue.js -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14"></script>
+    <!-- Google CSS Addon -->
+    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+  </head>
+    <body>
+      <div id="app">
+        <textarea v-model="message" placeholder="add multiple lines"></textarea>
+        <br>
+        <button @click=submit(message) class="create">Furiganize</button>
+        <p>{{ word_list }}</p>
+        <p id="copyTarget">{{ phrase }}</p>
+        <br>
+        <button @click=copy(phrase) class="copy">Copy</button>
+      </div>
+      <script>
+        let vm = new Vue({
+          el: '#app',
+        data: {
+          message: "",
+          word_list: "Result will apprear here",
+          phrase: ""
+        },
+        methods: {
+          submit: function(message){
+            response = google.script.run.withSuccessHandler(function(res) {
+              vm.word_list = res;
+              vm.phrase = res.join('');
+            }).furiganize(message);
+          },
+          copy: function(phrase) {
+                navigator.clipboard.writeText(phrase).catch((e) => {
+                console.error(e)})
+                  }
+          }
+          })
+     </script>
+    </body>
+</html>
